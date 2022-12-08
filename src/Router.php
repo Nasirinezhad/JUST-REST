@@ -12,7 +12,9 @@ namespace Nasirinezhad\JustRest;
         private $type = 0; 
 
         //args
-        private $args = 0;
+        private $args = [];
+        
+        public $argc = [];
 
         private $obj = NULL;
 
@@ -20,12 +22,20 @@ namespace Nasirinezhad\JustRest;
 
         public function __construct($args, $act) {
             $this->args = $args;
-            if (is_object($act)) {
+            if (is_callable($act)) {
                 $this->obj = $act;
                 $this->type = 0;
             }else if (is_string($act)) {
                 $this->cname = $act;
-                $this->type = 1;
+                $this->type = strpos(':', $act) > 0 ? 1 : 2;
+            }else if (is_array($act)) {
+                $this->cname = $act[0];
+                if(count($act) == 1) {
+                    $this->type = 2;
+                }else {
+                    $this->cname .= $act[1];
+                    $this->type = 1;
+                }
             }
         }
 
@@ -37,14 +47,90 @@ namespace Nasirinezhad\JustRest;
 
             switch ($this->type) {
                 case 0:
-                    return ($this->obj)();
+                    Request::nameArgs($this->args);
+                    return ($this->obj)(Request::getInctase());
                 case 1:
-                    return $this->obj->{$this->cname}();
+                    Request::nameArgs($this->args);
+                    return $this->obj->{$this->cname}(Request::getInctase());
                 case 2:
-                    return $this->obj->{$this->cname}();
+                    return $this->bind();
             }
+        }
 
-            
+        private function bind()
+        {
+            return $this->{Request::getMethod()}();
+        }
+
+        private function GET()
+        {
+            $r = Request::getInctase();
+
+            if(Request::$argc == 0 && method_exists($this->obj, 'index')) {
+                return $this->obj->index($r);
+            }
+            if(Request::$argc == 1 && is_numeric($r->get(0)) && method_exists($this->obj, 'find')) {
+                Request::nameArgs(['method', 'id']);
+                return $this->obj->find($r);
+            }
+            if(Request::$argc > 0 && method_exists($this->obj, 'method'.ucfirst($r->get(0)))) {
+                Request::nameArgs(['method']);
+                return $this->obj->{'method'.ucfirst($r->get(0))}($r);
+            }
+            throw new \Exception('Get method is not accepted');
+        }
+
+        private function POST()
+        {
+            $r = Request::getInctase();
+
+            if(Request::$argc == 0 && method_exists($this->obj, 'insert')) {
+                return $this->obj->insert($r);
+            }
+            if(Request::$argc > 0 && method_exists($this->obj, 'method'.ucfirst($r->get(0)))) {
+                Request::nameArgs(['method']);
+                return $this->obj->{'method'.ucfirst($r->get(0))}($r);
+            }
+            throw new \Exception('Post method is not accepted');
+        }
+
+        private function PUT()
+        {
+            $r = Request::getInctase();
+
+            if(Request::$argc == 0 && method_exists($this->obj, 'save')) {
+                return $this->obj->save($r);
+            }
+            if(Request::$argc > 0 && method_exists($this->obj, 'method'.ucfirst($r->get(0)))) {
+                Request::nameArgs(['method']);
+                return $this->obj->{'method'.ucfirst($r->get(0))}($r);
+            }
+            throw new \Exception('Put method is not accepted');
+        }
+
+        private function DELETE()
+        {
+            $r = Request::getInctase();
+
+            if(Request::$argc == 1 && method_exists($this->obj, 'remove')) {
+                Request::nameArgs(['id']);
+                return $this->obj->remove($r);
+            }
+            if(Request::$argc > 0 && method_exists($this->obj, 'method'.ucfirst($r->get(0)))) {
+                Request::nameArgs(['method']);
+                return $this->obj->{'method'.ucfirst($r->get(0))}($r);
+            }
+            throw new \Exception('Delete method is not accepted');
+        }
+        private function OPTION()
+        {
+            $r = Request::getInctase();
+
+            if(Request::$argc > 0 && method_exists($this->obj, 'option'.ucfirst($r->get(0)))) {
+                Request::nameArgs(['method']);
+                return $this->obj->{'option'.ucfirst($r->get(0))}($r);
+            }
+            throw new \Exception('method is not accepted');
         }
 
         private function createOBJ()
@@ -68,52 +154,118 @@ namespace Nasirinezhad\JustRest;
                 $this->obj = new $cname[0];
             }
 
-            if(!method_exists($this->obj, $cname[1])) {
-                throw new \Exception('Method '.$cname[1]. ' not exist in class!');
-            }
+            if($this->type == 1) {
 
-            $this->cname = $cname[1];
+                if(!method_exists($this->obj, $cname[1])) {
+                    throw new \Exception('Method '.$cname[1]. ' not exist in class!');
+                }
+
+                $this->cname = $cname[1];
+            }
         }
     }
     
-
-    class Router
+    class Request 
     {
-        private static $map = [
-            'GET' => [],
-            'POST' => [],
-            'PUT' => [],
-            'DEL' => [],
-            'OPTION' => []
-        ];
-        private static $uri = [];
-        private static $prefix = '/api';
-        private $method;
 
-        public function __construct()
+        private static $inctase = null;
+
+        protected static $uri = [];
+        public static $argc = 0;
+        protected static $argv = [];
+        protected static $prefix;
+
+        private static $method;
+
+
+        public function __construct($prefix = '/api')
         {
-            
+            if(self::$inctase == null) {
+                self::$inctase = $this;
+                self::$prefix = $prefix;
+            }
+
             if (substr($_SERVER['REQUEST_URI'], 0, strlen(self::$prefix)) == self::$prefix) {
-                $uri = substr($_SERVER['REQUEST_URI'], strlen(self::$prefix));
+                $uri = trim(substr($_SERVER['REQUEST_URI'], strlen(self::$prefix)), '/ \t');
             }else {
                 throw new \Exception('Wrong URI!');
             }
 
-            if($uri[0] == '/'){
-                $uri = substr($uri, 1);
-            }
-
             self::$uri = explode('/',$uri);
 
-            $this->method = $_SERVER['REQUEST_METHOD'];;
+            self::$method = $_SERVER['REQUEST_METHOD'];;
         }
 
-        public function getAction()
+        public function __get($name)
         {
-            $action = self::$map[$this->method];
-            $args = count(self::$uri);
+            if((self::$method == 'POST' || self::$method == 'PUT') && isset($_POST[$name])) {
+                return $_POST[$name];
+            }
+            if (isset(self::$argv[$name])) {
+                return self::$argv[$name];
+            }
+            throw new Exception($name.' not found!');
+        }
+        public function get($k)
+        {
+            $c = count(self::$uri) - self::$argc;
+            if (is_numeric($k) && isset(self::$uri[$c+$k])) {
+                return self::$argv[$k];
+            }
+            if (isset(self::$argv[$k])) {
+                return self::$argv[$k];
+            }
+            throw new Exception($k.' not found!');
+        }
 
-            foreach (self::$uri as $v) {
+        public static function getURI()
+        {
+            if(self::$inctase == NULL) {
+                throw new \Exception('Request is not constructed!');
+            }
+
+            return self::$uri;
+        }
+        public static function getMethod()
+        {
+            if(self::$inctase == NULL) {
+                throw new \Exception('Request is not constructed!');
+            }
+
+            return self::$method;
+        }
+        public static function getInctase()
+        {
+            if(self::$inctase == NULL) {
+                throw new \Exception('Request is not constructed!');
+            }
+
+            return self::$inctase;
+        }
+
+        public function nameArgs($names)
+        {
+            $c = count($uri) - $args;
+            foreach ($names as $k => $v) {
+                self::$argv[$v] = $uri[$c+$k];
+            }
+        }
+    }
+
+    class Router
+    {
+        private static $map = [];
+
+
+        public static function getAction()
+        {
+            $uri = Request::getURI();
+            $method = Request::getMethod();
+
+            $action = self::$map;
+            $args = count($uri);
+
+            foreach ($uri as $v) {
                 if (!array_key_exists($v, $action)) {
                     break;
                 }
@@ -121,11 +273,22 @@ namespace Nasirinezhad\JustRest;
                 $args--;
             }
 
-            if (!array_key_exists('arg-'.$args, $action)){
-                throw new \Exception('Method Not Found!');
+            Request::$argc = $args;
+
+            if (array_key_exists('Bind', $action)) {
+                return $action['Bind'];
             }
 
-            return $action['arg-'.$args];
+            if (array_key_exists($method.'-'.$args, $action)) {
+                return $action[$method.'-'.$args];
+            }
+            
+            if (array_key_exists($method.'-0', $action)) {
+                return $action[$method.'-0'];
+            }
+            
+            throw new \Exception('Method Not Found!');
+
         }
 
         private static function newRoute($path, $action, $method)
@@ -133,7 +296,7 @@ namespace Nasirinezhad\JustRest;
             $uri = explode('/', $path);
             $args = [];
 
-            $route = &self::$map[$method];
+            $route = &self::$map;
 
             foreach($uri as $v) {
                 if($v[0] == '{'){
@@ -143,11 +306,17 @@ namespace Nasirinezhad\JustRest;
                     $route = &$route[$v];
                 }
             }
-            $n = 'arg-'.count($args);
+            if($method == 'Bind') {
+                $n = 'Bind';
+            }else {
+                $n = $method.'-'.count($args);
+            }
             if (array_key_exists($n, $route)){
                 throw new \Exception('Route Already defined!');
             }
             $route[$n] = new Action($args, $action);
+
+            return $route[$n];
         }
 
         private static function mapAppend(&$route, $key)
@@ -172,11 +341,15 @@ namespace Nasirinezhad\JustRest;
         }
         public static function Del($path, $action)
         {
-            $route = self::newRoute($path, $action, 'DEL');
+            $route = self::newRoute($path, $action, 'DELETE');
         }
         public static function Option($path, $action)
         {
             $route = self::newRoute($path, $action, 'OPRION');
+        }
+        public static function Bind($path, $action)
+        {
+            $route = self::newRoute($path, $action, 'Bind');
         }
 
         //test
