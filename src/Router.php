@@ -25,7 +25,7 @@ namespace Nasirinezhad\JustRest;
                 $this->type = 0;
             }else if (is_string($act)) {
                 $this->cname = $act;
-                $this->type = 2;
+                $this->type = 1;
             }
         }
 
@@ -35,7 +35,44 @@ namespace Nasirinezhad\JustRest;
                 $this->createOBJ();
             }
 
-            return ($this->obj)();
+            switch ($this->type) {
+                case 0:
+                    return ($this->obj)();
+                case 1:
+                    return $this->obj->{$this->cname}();
+                case 2:
+                    return $this->obj->{$this->cname}();
+            }
+
+            
+        }
+
+        private function createOBJ()
+        {
+            if ($this->cname == '') {
+                throw new \Exception('No method set!');
+            }
+            
+            $cname = explode(':', $this->cname);
+            
+            if(!class_exists($cname[0])) {
+                throw new \Exception('Class name '.$cname[0].' dose not exist!');
+            }
+            
+            
+            if(method_exists($cname[0], 'getInstace')) {
+                $this->obj = ($cname[0])::getInstace();
+            }
+            
+            if($this->obj == NULL){
+                $this->obj = new $cname[0];
+            }
+
+            if(!method_exists($this->obj, $cname[1])) {
+                throw new \Exception('Method '.$cname[1]. ' not exist in class!');
+            }
+
+            $this->cname = $cname[1];
         }
     }
     
