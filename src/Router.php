@@ -47,10 +47,10 @@ namespace Nasirinezhad\JustRest;
 
             switch ($this->type) {
                 case 0:
-                    Request::nameArgs($this->args);
+                    Request::getInctase()->nameArgs($this->args);
                     return ($this->obj)(Request::getInctase());
                 case 1:
-                    Request::nameArgs($this->args);
+                    Request::getInctase()->nameArgs($this->args);
                     return $this->obj->{$this->cname}(Request::getInctase());
                 case 2:
                     return $this->bind();
@@ -70,11 +70,11 @@ namespace Nasirinezhad\JustRest;
                 return $this->obj->index($r);
             }
             if(Request::$argc == 1 && is_numeric($r->get(0)) && method_exists($this->obj, 'find')) {
-                Request::nameArgs(['method', 'id']);
+                $r->nameArgs(['id']);
                 return $this->obj->find($r);
             }
             if(Request::$argc > 0 && method_exists($this->obj, 'method'.ucfirst($r->get(0)))) {
-                Request::nameArgs(['method']);
+                $r->nameArgs(['method']);
                 return $this->obj->{'method'.ucfirst($r->get(0))}($r);
             }
             throw new \Exception('Get method is not accepted');
@@ -88,7 +88,7 @@ namespace Nasirinezhad\JustRest;
                 return $this->obj->insert($r);
             }
             if(Request::$argc > 0 && method_exists($this->obj, 'method'.ucfirst($r->get(0)))) {
-                Request::nameArgs(['method']);
+                $r->nameArgs(['method']);
                 return $this->obj->{'method'.ucfirst($r->get(0))}($r);
             }
             throw new \Exception('Post method is not accepted');
@@ -102,7 +102,7 @@ namespace Nasirinezhad\JustRest;
                 return $this->obj->save($r);
             }
             if(Request::$argc > 0 && method_exists($this->obj, 'method'.ucfirst($r->get(0)))) {
-                Request::nameArgs(['method']);
+                $r->nameArgs(['method']);
                 return $this->obj->{'method'.ucfirst($r->get(0))}($r);
             }
             throw new \Exception('Put method is not accepted');
@@ -113,11 +113,11 @@ namespace Nasirinezhad\JustRest;
             $r = Request::getInctase();
 
             if(Request::$argc == 1 && method_exists($this->obj, 'remove')) {
-                Request::nameArgs(['id']);
+                $r->nameArgs(['id']);
                 return $this->obj->remove($r);
             }
             if(Request::$argc > 0 && method_exists($this->obj, 'method'.ucfirst($r->get(0)))) {
-                Request::nameArgs(['method']);
+                $r->nameArgs(['method']);
                 return $this->obj->{'method'.ucfirst($r->get(0))}($r);
             }
             throw new \Exception('Delete method is not accepted');
@@ -127,7 +127,7 @@ namespace Nasirinezhad\JustRest;
             $r = Request::getInctase();
 
             if(Request::$argc > 0 && method_exists($this->obj, 'option'.ucfirst($r->get(0)))) {
-                Request::nameArgs(['method']);
+                $r->nameArgs(['method']);
                 return $this->obj->{'option'.ucfirst($r->get(0))}($r);
             }
             throw new \Exception('method is not accepted');
@@ -204,13 +204,13 @@ namespace Nasirinezhad\JustRest;
             if (isset(self::$argv[$name])) {
                 return self::$argv[$name];
             }
-            throw new Exception($name.' not found!');
+            throw new \Exception($name.' not found!');
         }
         public function get($k)
         {
             $c = count(self::$uri) - self::$argc;
             if (is_numeric($k) && isset(self::$uri[$c+$k])) {
-                return self::$argv[$k];
+                return self::$uri[$c+$k];
             }
             if (isset(self::$argv[$k])) {
                 return self::$argv[$k];
@@ -242,12 +242,16 @@ namespace Nasirinezhad\JustRest;
 
             return self::$inctase;
         }
+        public function setPrefix($prefix)
+        {
+            self::$prefix = $prefix;
+        }
 
         public function nameArgs($names)
         {
-            $c = count($uri) - $args;
+            $c = count(self::$uri) - self::$argc;
             foreach ($names as $k => $v) {
-                self::$argv[$v] = $uri[$c+$k];
+                self::$argv[$v] = self::$uri[$c+$k];
             }
         }
     }
@@ -352,10 +356,9 @@ namespace Nasirinezhad\JustRest;
             $route = self::newRoute($path, $action, 'Bind');
         }
 
-        //test
-        public static function test()
+        public function setPrefix($prefix)
         {
-            var_dump(self::$map);
+            Request::setPrefix($prefix);
         }
     }
      
