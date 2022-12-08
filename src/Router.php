@@ -186,7 +186,7 @@ namespace Nasirinezhad\JustRest;
             }
 
             if (substr($_SERVER['REQUEST_URI'], 0, strlen(self::$prefix)) == self::$prefix) {
-                $uri = trim(substr($_SERVER['REQUEST_URI'], strlen(self::$prefix)), '/ \t');
+                $uri = trim(substr($_SERVER['REQUEST_URI'], strlen(self::$prefix)), '/ ');
             }else {
                 throw new \Exception('Wrong URI!');
             }
