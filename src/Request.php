@@ -8,6 +8,7 @@ class Request
     private static $inctase = null;
 
     protected static $uri = [];
+    protected static $data = [];
     public static $argc = 0;
     protected static $argv = [];
     protected static $prefix;
@@ -30,13 +31,22 @@ class Request
 
         self::$uri = explode('/',$uri);
 
-        self::$method = $_SERVER['REQUEST_METHOD'];;
+        self::$method = $_SERVER['REQUEST_METHOD'];
+        
+        if(self::$method == 'POST') {
+            self::$data = $_POST;
+        }else {
+            parse_str(file_get_contents('php://input'), self::$data);
+            if (empty(self::$data)) {
+                self::$data = (array) json_decode(file_get_contents('php://input'));
+            }
+        }
     }
 
     public function __get($name)
     {
-        if((self::$method == 'POST' || self::$method == 'PUT') && isset($_POST[$name])) {
-            return $_POST[$name];
+        if(isset(self::$data[$name])) {
+            return self::$data[$name];
         }
         if (isset(self::$argv[$name])) {
             return self::$argv[$name];
