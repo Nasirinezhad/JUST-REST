@@ -33,7 +33,7 @@ class Action
             if(count($act) == 1) {
                 $this->type = 2;
             }else {
-                $this->cname .= $act[1];
+                $this->cname .= ':'.$act[1];
                 $this->type = 1;
             }
         }
