@@ -49,6 +49,9 @@ namespace Nasirinezhad\JustRest;
             $route = &self::$map;
 
             foreach($uri as $v) {
+                if (empty($v)) {
+                    continue;
+                }
                 if($v[0] == '{'){
                     $args[] = substr($v,1, strlen($v)-2);
                 }else {
