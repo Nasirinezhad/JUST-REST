@@ -1,6 +1,7 @@
 <?php
 
     use Nasirinezhad\JustRest\Router;
+    use Nasirinezhad\JustRest\RException;
     /**
      * Bind full class to router
      * Router will automaticaly refer requests ro controller methods
@@ -28,10 +29,17 @@
     Router::Post('user', ['User', 'newUser']);
 
     /**
-     * TODO: midleware
+     * add some method to midleware
+     * 
      */
-    /*
-    Router::Midleware('midclass:method')->get('user', 'User:me');
-    Router::Midleware([midclass::class,'method'])->get('user', 'User:me');
-    Router::Midleware(['midclass','method'])->get('user', 'User:me');
-    */
+    Router::middleware('Midclass:method')->get('users', 'User:me');
+    Router::middleware([Midclass::class,'method'])->post('users', 'User:me');
+    Router::middleware(function ($request)
+    {
+        if (!$request->header('Authorization')) {
+            throw new RException('Error! Unauthorized!', 401);
+            // or just return false;
+        }
+        return true;
+    })->get('me', 'User:me');
+    

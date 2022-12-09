@@ -1,5 +1,4 @@
 <?php
-
     /**
      * 1.include autolode to load classes
      */
@@ -12,6 +11,7 @@
      */
     require_once './controlles/users.php';
     require_once './controlles/products.php';
+    require_once './controlles/middleware.php';
 
     /**
      * 3.include defined routes
