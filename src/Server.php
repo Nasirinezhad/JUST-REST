@@ -25,15 +25,14 @@ namespace Nasirinezhad\JustRest;
 			}
 			header('Content-Type: application/json; charset=utf-8');
 
-			self::$router = new Router();
-			self::$request = new Request();
-
 			try {
+				self::$router = new Router();
+				self::$request = new Request();
 				$response = Router::getAction()->call();
 			} catch (\Exception $e) {
 				$this->error($e->getMessage(), 400);
 			}
-			if ($response) { 
+			if (isset($response) && $response) { 
 				$this->response($response);
 			}
 		}
