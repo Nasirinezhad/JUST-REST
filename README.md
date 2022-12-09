@@ -29,11 +29,14 @@ class Test {
 ```
 Bind your controller class to Router
 ```
-    Router::Bind('product', Product::class);
+    Router::Bind('test', Test::class);
 ```
 Or add Routes one by one
 ```
-    Router::Put('user', [User::class, 'update']);
+    Router::Get('test', [Test::class, 'index']);
+    Router::Get('test/{id}', [Test::class, 'find']);
+    Router::Post('test', [Test::class, 'insert']);
+    Router::Put('test', [Test::class, 'save']);
 ```
 
 
