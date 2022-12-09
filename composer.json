@@ -2,7 +2,9 @@
     "name": "nasirinezhad/just-rest",
     "description": "php rest server",
     "type": "library",
+    "keywords": ["restful","phprest"],
     "license": "MIT",
+    "homepage": "https://github.com/Nasirinezhad/JUST-REST",
     "autoload": {
         "psr-4": {
             "Nasirinezhad\\JustRest\\": "src/"
@@ -13,6 +15,5 @@
             "name": "Nasirinezhad",
             "email": "marsav98@gmail.com"
         }
-    ],
-    "require": {}
+    ]
 }
