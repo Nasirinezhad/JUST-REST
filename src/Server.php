@@ -20,8 +20,8 @@ namespace Nasirinezhad\JustRest;
 		{
 			try {
 				$this->corsHeaders();
-			} catch (\Exception $e) {
-				$this->error($e->getMessage(), 500);
+			} catch (RException $e) {
+				$this->error($e->getMessage(), $e->getStatusCode(), $e->getErrorCode());
 			}
 			header('Content-Type: application/json; charset=utf-8');
 
@@ -29,8 +29,8 @@ namespace Nasirinezhad\JustRest;
 				self::$router = new Router();
 				self::$request = new Request();
 				$response = Router::getAction()->call();
-			} catch (\Exception $e) {
-				$this->error($e->getMessage(), 400);
+			} catch (RException $e) {
+				$this->error($e->getMessage(), $e->getStatusCode(), $e->getErrorCode());
 			}
 			if (isset($response) && $response) { 
 				$this->response($response);
@@ -43,13 +43,13 @@ namespace Nasirinezhad\JustRest;
 			echo json_encode($obj);
 		}
 
-		public function error($m, $c = null)
+		public function error($m, $s = null, $c = null)
 		{
-			if ($c == null) {
-				$c = $m;
-				$m = $this->errorMessage($c);
+			if ($s == null) {
+				$c = $s = $m;
+				$m = $this->errorMessage($s);
 			}
-			http_response_code($c);
+			http_response_code($s);
 			echo json_encode(['error'=> $c, 'message' => $m]);
 		}
 		private function errorMessage($code)
