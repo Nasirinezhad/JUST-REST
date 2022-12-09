@@ -6,8 +6,9 @@ class Action
 {
     /**
      * 0: function
-     * 1: Controller::Method
-     * 2: Controller #TODO
+     * 1: function name
+     * 2: Controller::Method
+     * 3: Controller
      */
     private $type = 0; 
 
@@ -18,41 +19,81 @@ class Action
 
     private $obj = NULL;
 
-    private $cname = '';
+    private $cname = [];
 
-    public function __construct($args, $act) {
-        $this->args = $args;
+    private $middleware = NULL;
+
+    public function __construct($act, $bind) {
         if (is_callable($act)) {
             $this->obj = $act;
             $this->type = 0;
         }else if (is_string($act)) {
-            $this->cname = $act;
-            $this->type = strpos(':', $act) > 0 ? 1 : 2;
+            $this->cname = explode(':',$act);
         }else if (is_array($act)) {
-            $this->cname = $act[0];
-            if(count($act) == 1) {
-                $this->type = 2;
+            $this->cname = $act;
+        }
+
+        if($bind){
+            $this->type = 3;
+        }else {
+            $this->type = count($this->cname);
+        }
+    }
+    public function setArgs($args)
+    {
+        $this->args = $args;
+    }
+    public function setMiddleware($obj)
+    {
+        if (is_string($this->middleware)) {
+            $obj = explode(':', $obj);
+        }
+        $this->middleware = $obj;
+    }
+    private function middleware()
+    {
+        if($this->middleware == NULL) {
+            return true;
+        }
+
+        if (is_callable($this->middleware)) {
+            return ($this->middleware)(Request::getInctase());
+        }
+        
+        if(count($this->middleware) == 2) {
+            $obj = NULL;
+            if(method_exists($this->middleware[0], 'getInstace')) {
+                $obj = ($this->middleware[0])::getInstace();
             }else {
-                $this->cname .= ':'.$act[1];
-                $this->type = 1;
+                $this->obj = new $this->middleware[0];
             }
+            return call_user_method_array($this->middleware[1], $obj, Request::getInctase());
+        }
+
+        if(count($this->middleware) == 1) {
+            return call_user_func_array($this->middleware[0], Request::getInctase());
         }
     }
 
     public function call()
     {
+        if(!$this->middleware()) {
+            throw new Exception('middleware not accepted!');
+        }
+
         if (!is_object($this->obj)) {
             $this->createOBJ();
         }
 
         switch ($this->type) {
             case 0:
-                Request::getInctase()->nameArgs($this->args);
-                return ($this->obj)(Request::getInctase());
             case 1:
                 Request::getInctase()->nameArgs($this->args);
-                return $this->obj->{$this->cname}(Request::getInctase());
+                return ($this->obj)(Request::getInctase());
             case 2:
+                Request::getInctase()->nameArgs($this->args);
+                return $this->obj->{$this->cname[1]}(Request::getInctase());
+            case 3:
                 return $this->bind();
         }
     }
@@ -77,7 +118,7 @@ class Action
             $r->nameArgs(['method']);
             return $this->obj->{'method'.ucfirst($r->get(0))}($r);
         }
-        throw new \Exception('Get method is not accepted');
+        throw new RException('Get method is not accepted');
     }
 
     private function POST()
@@ -91,7 +132,7 @@ class Action
             $r->nameArgs(['method']);
             return $this->obj->{'method'.ucfirst($r->get(0))}($r);
         }
-        throw new \Exception('Post method is not accepted');
+        throw new RException('Post method is not accepted');
     }
 
     private function PUT()
@@ -105,7 +146,7 @@ class Action
             $r->nameArgs(['method']);
             return $this->obj->{'method'.ucfirst($r->get(0))}($r);
         }
-        throw new \Exception('Put method is not accepted');
+        throw new RException('Put method is not accepted');
     }
 
     private function DELETE()
@@ -120,7 +161,7 @@ class Action
             $r->nameArgs(['method']);
             return $this->obj->{'method'.ucfirst($r->get(0))}($r);
         }
-        throw new \Exception('Delete method is not accepted');
+        throw new RException('Delete method is not accepted');
     }
     private function OPTION()
     {
@@ -130,37 +171,35 @@ class Action
             $r->nameArgs(['method']);
             return $this->obj->{'option'.ucfirst($r->get(0))}($r);
         }
-        throw new \Exception('method is not accepted');
+        throw new RException('method is not accepted');
     }
 
     private function createOBJ()
     {
-        if ($this->cname == '') {
-            throw new \Exception('No method set!');
-        }
-        
-        $cname = explode(':', $this->cname);
-        
-        if(!class_exists($cname[0])) {
-            throw new \Exception('Class name '.$cname[0].' dose not exist!');
-        }
-        
-        
-        if(method_exists($cname[0], 'getInstace')) {
-            $this->obj = ($cname[0])::getInstace();
-        }
-        
-        if($this->obj == NULL){
-            $this->obj = new $cname[0];
+        if (empty($this->cname)) {
+            throw new RException('No method set!');
         }
 
         if($this->type == 1) {
-
-            if(!method_exists($this->obj, $cname[1])) {
-                throw new \Exception('Method '.$cname[1]. ' not exist in class!');
+            $this->obj = $this->cname[0];
+        }else {
+            if(!class_exists($this->cname[0])) {
+                throw new RException('Class name '.$this->cname[0].' dose not exist!');
+            }
+            
+            if(method_exists($this->cname[0], 'getInstace')) {
+                $this->obj = ($this->cname[0])::getInstace();
+            }
+            
+            if($this->obj == NULL){
+                $this->obj = new $this->cname[0];
             }
 
-            $this->cname = $cname[1];
+            if($this->type == 2) {
+                if(!method_exists($this->obj, $this->cname[1])) {
+                    throw new RException('Method '.$this->cname[1]. ' not exist in class!');
+                }
+            }
         }
     }
 }

@@ -6,6 +6,7 @@ namespace Nasirinezhad\JustRest;
     {
         private static $map = [];
 
+        private $middleware = null;
 
         public static function getAction()
         {
@@ -37,7 +38,7 @@ namespace Nasirinezhad\JustRest;
                 return $action[$method.'-0'];
             }
             
-            throw new \Exception('Method Not Found!');
+            throw new RException('Method Not Found!');
 
         }
 
@@ -65,9 +66,10 @@ namespace Nasirinezhad\JustRest;
                 $n = $method.'-'.count($args);
             }
             if (array_key_exists($n, $route)){
-                throw new \Exception('Route Already defined!');
+                throw new RException('Route Already defined!');
             }
-            $route[$n] = new Action($args, $action);
+            $route[$n] = new Action($action, $method == 'Bind');
+            $route[$n]->setArgs($args);
 
             return $route[$n];
         }
@@ -80,30 +82,74 @@ namespace Nasirinezhad\JustRest;
             // $route = $route[$key];
         }
 
-        public static function Get($path, $action)
+        public static function __callStatic($name, $args)
         {
-            $route = self::newRoute($path, $action, 'GET');
+            if (count($args) != 2) {
+                throw new RException('Unknow route method!');
+            }
+
+            switch (strtolower($name)) {
+                case 'get':
+                    self::newRoute($args[0], $args[1], 'GET');
+                    break;
+                case 'put':
+                    self::newRoute($args[0], $args[1], 'PUT');
+                    break;
+                case 'post':
+                    self::newRoute($args[0], $args[1], 'POST');
+                    break;
+                case 'delete':
+                case 'del':
+                    self::newRoute($args[0], $args[1], 'DELETE');
+                    break;
+                case 'option':
+                    self::newRoute($args[0], $args[1], 'OPRION');
+                    break;
+                case 'bind':
+                    self::newRoute($args[0], $args[1], 'Bind');
+                    break;
+            }
         }
-        public static function Put($path, $action)
+        public function __call($name, $args)
         {
-            $route = self::newRoute($path, $action, 'PUT');
+            if (count($args) != 2) {
+                throw new RException('Unknow route method!');
+            }
+            $action = null;
+            switch (strtolower($name)) {
+                case 'get':
+                    $action = self::newRoute($args[0], $args[1], 'GET');
+                    break;
+                case 'put':
+                    $action = self::newRoute($args[0], $args[1], 'PUT');
+                    break;
+                case 'post':
+                    $action = self::newRoute($args[0], $args[1], 'POST');
+                    break;
+                case 'delete':
+                case 'del':
+                    $action = self::newRoute($args[0], $args[1], 'DELETE');
+                    break;
+                case 'option':
+                    $action = self::newRoute($args[0], $args[1], 'OPRION');
+                    break;
+                case 'bind':
+                    $action = self::newRoute($args[0], $args[1], 'Bind');
+                    break;
+            }
+            if ($action && $this->middleware) {
+                $action->setMiddleware($this->middleware);
+            }
         }
-        public static function Post($path, $action)
+
+        public static function middleware($method)
         {
-            $route = self::newRoute($path, $action, 'POST');
+            $obj = new Router();
+            $obj->middleware = $method;
+            return $obj;
         }
-        public static function Del($path, $action)
-        {
-            $route = self::newRoute($path, $action, 'DELETE');
-        }
-        public static function Option($path, $action)
-        {
-            $route = self::newRoute($path, $action, 'OPRION');
-        }
-        public static function Bind($path, $action)
-        {
-            $route = self::newRoute($path, $action, 'Bind');
-        }
+
+
 
         public function setPrefix($prefix)
         {

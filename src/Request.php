@@ -26,7 +26,7 @@ class Request
         if (substr($_SERVER['REQUEST_URI'], 0, strlen(self::$prefix)) == self::$prefix) {
             $uri = trim(substr($_SERVER['REQUEST_URI'], strlen(self::$prefix)), '/ ');
         }else {
-            throw new \Exception('Wrong URI!');
+            throw new RException('Wrong URI!');
         }
 
         self::$uri = explode('/',$uri);
@@ -51,7 +51,7 @@ class Request
         if (isset(self::$argv[$name])) {
             return self::$argv[$name];
         }
-        throw new \Exception($name.' not found!');
+        throw new RException($name.' not found!');
     }
     public function get($k)
     {
@@ -64,11 +64,19 @@ class Request
         }
         throw new Exception($k.' not found!');
     }
+    public function header($name)
+    {
+        $name = 'HTTP_'.strtoupper(str_replace('/-| /', '_', $name));
+        if (isset($_SERVER[$name])) {
+            return $_SERVER[$name];
+        }
+        return null;
+    }
 
     public static function getURI()
     {
         if(self::$inctase == NULL) {
-            throw new \Exception('Request is not constructed!');
+            throw new RException('Request is not constructed!');
         }
 
         return self::$uri;
@@ -76,7 +84,7 @@ class Request
     public static function getMethod()
     {
         if(self::$inctase == NULL) {
-            throw new \Exception('Request is not constructed!');
+            throw new RException('Request is not constructed!');
         }
 
         return self::$method;
@@ -84,7 +92,7 @@ class Request
     public static function getInctase()
     {
         if(self::$inctase == NULL) {
-            throw new \Exception('Request is not constructed!');
+            throw new RException('Request is not constructed!');
         }
 
         return self::$inctase;
