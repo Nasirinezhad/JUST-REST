@@ -140,6 +140,7 @@ namespace Nasirinezhad\JustRest;
             if ($action && $this->middleware) {
                 $action->setMiddleware($this->middleware);
             }
+            return $this;
         }
 
         public static function middleware($method)
