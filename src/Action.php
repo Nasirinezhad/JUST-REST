@@ -67,11 +67,11 @@ class Action
             }else {
                 $this->obj = new $this->middleware[0];
             }
-            return call_user_method([$this->middleware[1], $obj], Request::getInctase());
+            return call_user_func([&$obj, $this->middleware[1]], Request::getInctase());
         }
 
         if(count($this->middleware) == 1) {
-            return call_user_func([$this->middleware[0]], Request::getInctase());
+            return call_user_func($this->middleware[0], Request::getInctase());
         }
     }
 
