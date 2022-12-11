@@ -62,8 +62,8 @@ class Action
         
         if(count($this->middleware) == 2) {
             $obj = NULL;
-            if(method_exists($this->middleware[0], 'getInstace')) {
-                $obj = ($this->middleware[0])::getInstace();
+            if(method_exists($this->middleware[0], 'getInctase')) {
+                $obj = ($this->middleware[0])::getInctase();
             }else {
                 $this->obj = new $this->middleware[0];
             }
@@ -187,8 +187,8 @@ class Action
                 throw new RException('Class name '.$this->cname[0].' dose not exist!');
             }
             
-            if(method_exists($this->cname[0], 'getInstace')) {
-                $this->obj = ($this->cname[0])::getInstace();
+            if(method_exists($this->cname[0], 'getInctase')) {
+                $this->obj = ($this->cname[0])::getInctase();
             }
             
             if($this->obj == NULL){
