@@ -33,12 +33,12 @@ class Request
 
         self::$method = $_SERVER['REQUEST_METHOD'];
         
-        if(self::$method == 'POST') {
+        if(!empty($_POST)) {
             self::$data = $_POST;
         }else {
-            parse_str(file_get_contents('php://input'), self::$data);
+            self::$data = (array) json_decode(file_get_contents('php://input'));
             if (empty(self::$data)) {
-                self::$data = (array) json_decode(file_get_contents('php://input'));
+                parse_str(file_get_contents('php://input'), self::$data);
             }
         }
     }
@@ -62,7 +62,7 @@ class Request
         if (isset(self::$argv[$k])) {
             return self::$argv[$k];
         }
-        throw new Exception($k.' not found!');
+        throw new RException($k.' not found!');
     }
     public function header($name)
     {
